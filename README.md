@@ -1,8 +1,18 @@
 # 局域网文件托管服务 MCP
 
+[![smithery badge](https://smithery.ai/badge/@prodzhang/localnetwork)](https://smithery.ai/server/@prodzhang/localnetwork)
+
 这是一个简单的局域网文件托管服务，允许在局域网内轻松共享和下载文件。特别适合用于下载和托管 Swagger/OpenAPI 文档等文本文件。
 
 ## 安装
+
+### 安装 via Smithery
+
+要通过 [Smithery](https://smithery.ai/server/@prodzhang/localnetwork) 为 Claude 桌面用户自动安装本地网络：
+
+```bash
+npx -y @smithery/cli install @prodzhang/localnetwork --client claude
+```
 
 ### 作为全局 MCP 安装
 
