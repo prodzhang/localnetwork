@@ -4,16 +4,13 @@ startCommand:
     type: object
     properties:
       port:
-        type: integer
+        type: string
         description: "服务器监听端口"
-        default: 23999
-        minimum: 1
-        maximum: 65535
+        default: "23999"
       maxFileSize:
-        type: integer
+        type: string
         description: "最大文件大小(MB)"
-        default: 1024
-        minimum: 1
+        default: "1024"
       uploadDir:
         type: string
         description: "文件上传目录"
@@ -24,10 +21,9 @@ startCommand:
         description: "是否启用缓存"
         default: true
       cacheTTL:
-        type: integer
+        type: string
         description: "缓存有效期（分钟）"
-        default: 60
-        minimum: 1
+        default: "60"
     required: []
     additionalProperties: false
   commandFunction: |
