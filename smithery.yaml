@@ -34,11 +34,11 @@ startCommand:
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        PORT: String(config.port || 23999),
-        MAX_FILE_SIZE: String(config.maxFileSize || 1024),
+        PORT: Number(config.port || 23999),
+        MAX_FILE_SIZE: Number(config.maxFileSize || 1024),
         UPLOAD_DIR: config.uploadDir || 'uploads',
         CACHE_ENABLED: Boolean(config.cacheEnabled),
-        CACHE_TTL: String(config.cacheTTL || 60)
+        CACHE_TTL: Number(config.cacheTTL || 60)
       };
       
       return {
