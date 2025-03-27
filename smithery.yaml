@@ -9,31 +9,35 @@ startCommand:
         default: 5000
         minimum: 1000
         maximum: 30000
+        title: "请求超时时间"
       maxRedirects:
         type: integer
         description: "最大重定向次数"
         default: 5
         minimum: 0
         maximum: 10
+        title: "最大重定向次数"
       cacheEnabled:
         type: boolean
         description: "是否启用缓存"
         default: true
+        title: "启用缓存"
       cacheTTL:
         type: integer
         description: "缓存有效期（秒）"
         default: 300
         minimum: 60
         maximum: 3600
-    required: []
+        title: "缓存有效期"
+    required: ["requestTimeout", "maxRedirects"]
     additionalProperties: false
   commandFunction: |
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        REQUEST_TIMEOUT: String(config.requestTimeout || 5000),
-        MAX_REDIRECTS: String(config.maxRedirects || 5),
-        CACHE_ENABLED: Boolean(config.cacheEnabled),
+        REQUEST_TIMEOUT: String(config.requestTimeout),
+        MAX_REDIRECTS: String(config.maxRedirects),
+        CACHE_ENABLED: String(config.cacheEnabled !== false),
         CACHE_TTL: String(config.cacheTTL || 300)
       };
       
