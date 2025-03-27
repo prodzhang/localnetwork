@@ -1,44 +1,46 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+build:
+  dockerfile: Dockerfile
+  dockerBuildPath: .
 startCommand:
   type: stdio
   configSchema:
+    # JSON Schema defining the configuration options for the MCP.
     type: object
+    required: []
     properties:
       port:
-        type: integer
-        description: "服务器监听端口"
+        type: number
         default: 23999
-        minimum: 1
-        maximum: 65535
-      maxFileSize:
-        type: integer
-        description: "最大文件大小(MB)"
-        default: 1024
-        minimum: 1
+        description: 服务器监听端口
+      cacheTTL:
+        type: number
+        default: 60
+        description: 缓存有效期（分钟）
       uploadDir:
         type: string
-        description: "文件上传目录"
-        default: "uploads"
-        minLength: 1
+        default: uploads
+        description: 文件上传目录
+      maxFileSize:
+        type: number
+        default: 1024
+        description: 最大文件大小(MB)
       cacheEnabled:
         type: boolean
-        description: "是否启用缓存"
         default: true
-      cacheTTL:
-        type: integer
-        description: "缓存有效期（分钟）"
-        default: 60
-        minimum: 1
-    required: []
-    additionalProperties: false
-  commandFunction: |
+        description: 是否启用缓存
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        PORT: String(config.port || 23999),
-        MAX_FILE_SIZE: String(config.maxFileSize || 1024),
+        PORT: config.port || 23999,
+        MAX_FILE_SIZE: config.maxFileSize || 1024,
         UPLOAD_DIR: config.uploadDir || 'uploads',
-        CACHE_ENABLED: Boolean(config.cacheEnabled),
-        CACHE_TTL: String(config.cacheTTL || 60)
+        CACHE_ENABLED: config.cacheEnabled ? '1' : '0',
+        CACHE_TTL: config.cacheTTL || 60
       };
       
       return {
@@ -47,7 +49,3 @@ startCommand:
         env: env
       };
     }
-
-build:
-  dockerfile: Dockerfile
-  dockerBuildPath: . 
