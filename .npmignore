@@ -1,0 +1,9 @@
+uploads/
+.git/
+.gitignore
+node_modules/
+*.log
+.DS_Store
+.env
+.vscode/
+.idea/ 
