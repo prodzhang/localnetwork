@@ -1,14 +1,15 @@
 {
-  "name": "@prodzhang/localnetwork-mcp",
+  "name": "@zhangfq/localnetwork-mcp",
   "version": "1.0.0",
   "description": "局域网文件托管和下载服务 MCP",
-  "main": "index.js",
+  "main": "start-server.js",
   "bin": {
-    "localnetwork-mcp": "./index.js"
+    "localnetwork-mcp": "./start-server.js"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node start-server.js",
+    "dev": "nodemon start-server.js",
+    "serve": "node src/server.js"
   },
   "dependencies": {
     "axios": "^1.8.4",
@@ -29,13 +30,42 @@
     "swagger",
     "api-docs"
   ],
-  "author": "prodzhang",
+  "author": "zhangfq",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prodzhang/localnetwork.git"
+    "url": "git+https://github.com/zhangfq/localnetwork-mcp.git"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "mcp": {
+    "type": "stdio",
+    "tools": [
+      {
+        "name": "mcp_fetch_mcp_fetch_txt",
+        "description": "从URL获取文本内容"
+      },
+      {
+        "name": "mcp_fetch_mcp_fetch_json",
+        "description": "从URL获取JSON内容"
+      },
+      {
+        "name": "mcp_swagger_mcp_server_parse_swagger",
+        "description": "解析Swagger/OpenAPI文档"
+      },
+      {
+        "name": "mcp_swagger_mcp_server_parse_swagger_optimized",
+        "description": "优化版Swagger解析器"
+      },
+      {
+        "name": "mcp_swagger_mcp_server_parse_swagger_lite",
+        "description": "轻量级Swagger解析器"
+      },
+      {
+        "name": "mcp_swagger_mcp_server_file_writer",
+        "description": "写入文件到文件系统"
+      }
+    ]
   }
 }

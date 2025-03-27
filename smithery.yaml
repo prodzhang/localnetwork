@@ -15,17 +15,29 @@ startCommand:
         type: string
         description: "文件上传目录"
         default: "uploads"
+      cacheEnabled:
+        type: boolean
+        description: "是否启用缓存"
+        default: true
+      cacheTTL:
+        type: number
+        description: "缓存有效期（分钟）"
+        default: 60
     required: []
   commandFunction: |
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        PORT: config.port || 23999
+        PORT: config.port || 23999,
+        MAX_FILE_SIZE: config.maxFileSize || 1024,
+        UPLOAD_DIR: config.uploadDir || 'uploads',
+        CACHE_ENABLED: config.cacheEnabled ? '1' : '0',
+        CACHE_TTL: config.cacheTTL || 60
       };
       
       return {
         command: 'node',
-        args: ['index.js'],
+        args: ['start-server.js'],
         env: env
       };
     }

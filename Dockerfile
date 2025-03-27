@@ -18,8 +18,11 @@ RUN mkdir -p uploads
 ENV NODE_ENV=production
 ENV PORT=23999
 
+# 设置执行权限
+RUN chmod +x start-server.js
+
 # 暴露端口
 EXPOSE 23999
 
 # 启动服务器
-CMD ["node", "index.js"]
+CMD ["./start-server.js"]
