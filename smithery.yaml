@@ -3,43 +3,43 @@ startCommand:
   configSchema:
     type: object
     properties:
-      port:
-        type: string
-        description: "服务器监听端口"
-        default: "23999"
-      maxFileSize:
-        type: string
-        description: "最大文件大小(MB)"
-        default: "1024"
-      uploadDir:
-        type: string
-        description: "文件上传目录"
-        default: "uploads"
-        minLength: 1
+      requestTimeout:
+        type: integer
+        description: "请求超时时间（毫秒）"
+        default: 5000
+        minimum: 1000
+        maximum: 30000
+      maxRedirects:
+        type: integer
+        description: "最大重定向次数"
+        default: 5
+        minimum: 0
+        maximum: 10
       cacheEnabled:
         type: boolean
         description: "是否启用缓存"
         default: true
       cacheTTL:
-        type: string
-        description: "缓存有效期（分钟）"
-        default: "60"
+        type: integer
+        description: "缓存有效期（秒）"
+        default: 300
+        minimum: 60
+        maximum: 3600
     required: []
     additionalProperties: false
   commandFunction: |
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        PORT: Number(config.port || 23999),
-        MAX_FILE_SIZE: Number(config.maxFileSize || 1024),
-        UPLOAD_DIR: config.uploadDir || 'uploads',
+        REQUEST_TIMEOUT: String(config.requestTimeout || 5000),
+        MAX_REDIRECTS: String(config.maxRedirects || 5),
         CACHE_ENABLED: Boolean(config.cacheEnabled),
-        CACHE_TTL: Number(config.cacheTTL || 60)
+        CACHE_TTL: String(config.cacheTTL || 300)
       };
       
       return {
         command: 'node',
-        args: ['start-server.js'],
+        args: ['src/server.js'],
         env: env
       };
     }
