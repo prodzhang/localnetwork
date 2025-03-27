@@ -1,0 +1,35 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      port:
+        type: number
+        description: "服务器监听端口"
+        default: 23999
+      maxFileSize:
+        type: number
+        description: "最大文件大小(MB)"
+        default: 1024
+      uploadDir:
+        type: string
+        description: "文件上传目录"
+        default: "uploads"
+    required: []
+  commandFunction: |
+    function getCommand(config) {
+      const env = {
+        NODE_ENV: 'production',
+        PORT: config.port || 23999
+      };
+      
+      return {
+        command: 'node',
+        args: ['index.js'],
+        env: env
+      };
+    }
+
+build:
+  dockerfile: Dockerfile
+  dockerBuildPath: . 

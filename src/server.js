@@ -7,9 +7,15 @@ const fs = require('fs');
 const axios = require('axios');
 const crypto = require('crypto');
 
+// 配置选项
+const config = {
+    port: process.env.PORT || 23999,
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '1024', 10) * 1024 * 1024, // 默认1GB
+    uploadDir: process.env.UPLOAD_DIR || path.join(__dirname, '../uploads')
+};
+
 const app = express();
-const PORT = process.env.PORT || 23999;
-const UPLOAD_DIR = path.join(__dirname, '../uploads');
+const UPLOAD_DIR = config.uploadDir;
 
 // 确保上传目录存在
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -23,7 +29,7 @@ app.use(express.json());
 app.use(fileUpload({
     createParentPath: true,
     limits: {
-        fileSize: 1024 * 1024 * 1024 // 限制文件大小为1GB
+        fileSize: config.maxFileSize
     }
 }));
 
@@ -156,7 +162,11 @@ app.get('/api/files/:filename/content', (req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
+const server = app.listen(config.port, '0.0.0.0', () => {
+    console.log(`服务器运行在 http://0.0.0.0:${config.port}`);
     console.log(`文件上传目录: ${UPLOAD_DIR}`);
-}); 
+    console.log(`最大文件大小: ${config.maxFileSize / (1024 * 1024)}MB`);
+});
+
+// 导出服务器实例
+module.exports = server; 
