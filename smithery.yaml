@@ -4,35 +4,41 @@ startCommand:
     type: object
     properties:
       port:
-        type: number
+        type: integer
         description: "服务器监听端口"
         default: 23999
+        minimum: 1
+        maximum: 65535
       maxFileSize:
-        type: number
+        type: integer
         description: "最大文件大小(MB)"
         default: 1024
+        minimum: 1
       uploadDir:
         type: string
         description: "文件上传目录"
         default: "uploads"
+        minLength: 1
       cacheEnabled:
         type: boolean
         description: "是否启用缓存"
         default: true
       cacheTTL:
-        type: number
+        type: integer
         description: "缓存有效期（分钟）"
         default: 60
+        minimum: 1
     required: []
+    additionalProperties: false
   commandFunction: |
     function getCommand(config) {
       const env = {
         NODE_ENV: 'production',
-        PORT: config.port || 23999,
-        MAX_FILE_SIZE: config.maxFileSize || 1024,
+        PORT: String(config.port || 23999),
+        MAX_FILE_SIZE: String(config.maxFileSize || 1024),
         UPLOAD_DIR: config.uploadDir || 'uploads',
-        CACHE_ENABLED: config.cacheEnabled ? '1' : '0',
-        CACHE_TTL: config.cacheTTL || 60
+        CACHE_ENABLED: Boolean(config.cacheEnabled),
+        CACHE_TTL: String(config.cacheTTL || 60)
       };
       
       return {

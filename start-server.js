@@ -4,6 +4,15 @@ const readline = require('readline');
 const { stdin: input, stdout: output } = require('process');
 const rl = readline.createInterface({ input, output });
 
+// 配置
+const config = {
+    port: parseInt(process.env.PORT || '23999', 10),
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '1024', 10),
+    uploadDir: process.env.UPLOAD_DIR || 'uploads',
+    cacheEnabled: process.env.CACHE_ENABLED === 'true',
+    cacheTTL: parseInt(process.env.CACHE_TTL || '60', 10)
+};
+
 // 创建一个消息队列来处理请求
 const messageQueue = [];
 let isProcessing = false;
