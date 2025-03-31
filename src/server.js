@@ -1,172 +1,155 @@
-const express = require('express');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
-const morgan = require('morgan');
-const path = require('path');
-const fs = require('fs');
-const axios = require('axios');
-const crypto = require('crypto');
+#!/usr/bin/env node
 
-// 配置选项
+const readline = require('readline');
+const { stdin: input, stdout: output } = require('process');
+const axios = require('axios');
+const NodeCache = require('node-cache');
+const url = require('url');
+
+// 创建缓存实例
+const cache = new NodeCache({
+    stdTTL: parseInt(process.env.CACHE_TTL || '300', 10), // 默认缓存5分钟
+    checkperiod: 120
+});
+
+// 配置
 const config = {
-    port: process.env.PORT || 23999,
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '1024', 10) * 1024 * 1024, // 默认1GB
-    uploadDir: process.env.UPLOAD_DIR || path.join(__dirname, '../uploads')
+    timeout: parseInt(process.env.REQUEST_TIMEOUT || '5000', 10),
+    maxRedirects: parseInt(process.env.MAX_REDIRECTS || '5', 10),
+    cacheEnabled: process.env.CACHE_ENABLED !== 'false',
+    defaultHeaders: {
+        'User-Agent': 'LocalNet-MCP/1.0.0'
+    }
 };
 
-const app = express();
-const UPLOAD_DIR = config.uploadDir;
-
-// 确保上传目录存在
-if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-// 中间件配置
-app.use(cors());
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(fileUpload({
-    createParentPath: true,
-    limits: {
-        fileSize: config.maxFileSize
-    }
-}));
-
-// 静态文件服务
-app.use('/files', express.static(UPLOAD_DIR));
-
-// 从URL下载文件
-app.post('/api/download-url', async (req, res) => {
-    try {
-        const { url } = req.body;
-        if (!url) {
-            return res.status(400).json({ error: '请提供URL' });
-        }
-
-        // 生成文件名（使用URL的最后部分，如果没有则使用时间戳）
-        let filename = path.basename(url);
-        if (!filename || filename.length < 3) {
-            const timestamp = Date.now();
-            const hash = crypto.createHash('md5').update(url).digest('hex').slice(0, 6);
-            filename = `file_${timestamp}_${hash}.json`;
-        }
-
-        const filePath = path.join(UPLOAD_DIR, filename);
-
-        // 下载文件
-        const response = await axios({
-            method: 'GET',
-            url: url,
-            responseType: 'text',
-            timeout: 30000, // 30秒超时
-        });
-
-        // 保存文件
-        fs.writeFileSync(filePath, response.data);
-
-        // 获取文件信息
-        const stats = fs.statSync(filePath);
-
-        res.json({
-            message: '文件下载成功',
-            filename: filename,
-            size: stats.size,
-            url: `/files/${filename}`,
-            content: response.data // 同时返回文件内容
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            error: '下载文件失败',
-            details: error.message 
-        });
-    }
+// 创建请求客户端
+const client = axios.create({
+    timeout: config.timeout,
+    maxRedirects: config.maxRedirects,
+    headers: config.defaultHeaders,
+    validateStatus: null // 允许所有状态码
 });
 
-// 获取所有文件列表
-app.get('/api/files', (req, res) => {
-    try {
-        const files = fs.readdirSync(UPLOAD_DIR)
-            .map(filename => {
-                const filePath = path.join(UPLOAD_DIR, filename);
-                const stats = fs.statSync(filePath);
-                return {
-                    name: filename,
-                    size: stats.size,
-                    createdAt: stats.birthtime,
-                    modifiedAt: stats.mtime,
-                    url: `/files/${filename}`
-                };
-            });
-        res.json(files);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// 处理请求
+async function handleRequest(method, params) {
+    switch (method) {
+        case 'localnet_request':
+            const { url: targetUrl, method: httpMethod = 'GET', headers = {}, data, cacheKey } = params;
 
-// 上传文件
-app.post('/api/upload', (req, res) => {
-    try {
-        if (!req.files || Object.keys(req.files).length === 0) {
-            return res.status(400).json({ error: '没有文件被上传' });
-        }
-
-        const file = req.files.file;
-        const filePath = path.join(UPLOAD_DIR, file.name);
-
-        file.mv(filePath, (err) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
+            // 如果启用缓存且是GET请求，先检查缓存
+            if (config.cacheEnabled && httpMethod === 'GET' && cacheKey) {
+                const cachedResponse = cache.get(cacheKey);
+                if (cachedResponse) {
+                    return {
+                        success: true,
+                        result: {
+                            ...cachedResponse,
+                            fromCache: true
+                        }
+                    };
+                }
             }
 
-            res.json({
-                message: '文件上传成功',
-                filename: file.name,
-                size: file.size,
-                url: `/files/${file.name}`
-            });
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+            // 发送请求
+            try {
+                const response = await client({
+                    url: targetUrl,
+                    method: httpMethod,
+                    headers: { ...config.defaultHeaders, ...headers },
+                    data: data,
+                    responseType: 'text'
+                });
 
-// 删除文件
-app.delete('/api/files/:filename', (req, res) => {
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers,
+                    data: response.data,
+                    fromCache: false
+                };
+
+                // 如果是成功的GET请求且启用了缓存，保存到缓存
+                if (config.cacheEnabled && httpMethod === 'GET' && response.status >= 200 && response.status < 300 && cacheKey) {
+                    cache.set(cacheKey, result);
+                }
+
+                return {
+                    success: true,
+                    result
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: {
+                        message: error.message,
+                        code: error.code,
+                        response: error.response ? {
+                            status: error.response.status,
+                            statusText: error.response.statusText,
+                            data: error.response.data
+                        } : null
+                    }
+                };
+            }
+
+        case 'localnet_health_check':
+            const { url: healthUrl } = params;
+
+            try {
+                const startTime = Date.now();
+                const response = await client.get(healthUrl);
+                const endTime = Date.now();
+
+                return {
+                    success: true,
+                    result: {
+                        status: response.status,
+                        responseTime: endTime - startTime,
+                        healthy: response.status >= 200 && response.status < 300,
+                        timestamp: new Date().toISOString()
+                    }
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: {
+                        message: error.message,
+                        code: error.code
+                    }
+                };
+            }
+
+        default:
+            throw new Error(`不支持的方法: ${method}`);
+    }
+}
+
+// 创建readline接口
+const rl = readline.createInterface({ input, output });
+
+// 处理输入
+rl.on('line', async (line) => {
     try {
-        const filePath = path.join(UPLOAD_DIR, req.params.filename);
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: '文件不存在' });
+        const request = JSON.parse(line);
+        const { method, params } = request;
+
+        try {
+            const response = await handleRequest(method, params);
+            console.log(JSON.stringify(response));
+        } catch (error) {
+            console.log(JSON.stringify({
+                success: false,
+                error: {
+                    message: error.message
+                }
+            }));
         }
-
-        fs.unlinkSync(filePath);
-        res.json({ message: '文件删除成功' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.log(JSON.stringify({
+            success: false,
+            error: {
+                message: '无效的JSON请求'
+            }
+        }));
     }
-});
-
-// 获取文件内容
-app.get('/api/files/:filename/content', (req, res) => {
-    try {
-        const filePath = path.join(UPLOAD_DIR, req.params.filename);
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: '文件不存在' });
-        }
-
-        const content = fs.readFileSync(filePath, 'utf-8');
-        res.json({ content });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// 启动服务器
-const server = app.listen(config.port, '0.0.0.0', () => {
-    console.log(`服务器运行在 http://0.0.0.0:${config.port}`);
-    console.log(`文件上传目录: ${UPLOAD_DIR}`);
-    console.log(`最大文件大小: ${config.maxFileSize / (1024 * 1024)}MB`);
-});
-
-// 导出服务器实例
-module.exports = server; 
+}); 

@@ -11,18 +11,11 @@ RUN npm install --production
 # 复制源代码
 COPY . .
 
-# 创建uploads目录
-RUN mkdir -p uploads
+# 设置执行权限
+RUN chmod +x src/server.js
 
 # 设置环境变量
 ENV NODE_ENV=production
-ENV PORT=23999
-
-# 设置执行权限
-RUN chmod +x start-server.js
-
-# 暴露端口
-EXPOSE 23999
 
 # 启动服务器
-CMD ["./start-server.js"]
+CMD ["./src/server.js"] 

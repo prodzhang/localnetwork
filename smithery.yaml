@@ -45,7 +45,13 @@ startCommand:
       
       return {
         command: 'node',
-        args: ['start-server.js'],
-        env: env
+        args: ['src/server.js'],
+        env: {
+          NODE_ENV: 'production',
+          REQUEST_TIMEOUT: String(config.requestTimeout || 5000),
+          MAX_REDIRECTS: String(config.maxRedirects || 5),
+          CACHE_ENABLED: String(config.cacheEnabled !== false),
+          CACHE_TTL: String(config.cacheTTL || 300)
+        }
       };
     }
